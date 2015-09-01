@@ -10,7 +10,9 @@ import (
 
 type ConfigFile struct {
 	Filename string
-	File os.File
+	FullPath string
+	PathSeparator string
+	File *os.File
 }
 
 
@@ -22,8 +24,11 @@ func NewConfigFile(filename string, etcLookup bool) (*ConfigFile, error) {
 	var stat bool
 	var err error
 
+	cnf.PathSeparator = string(os.PathSeparator)
+
 	// Read from current folder
-	if stat, err = cnf.readFrom(""); err != nil {
+	current, err := os.Getwd()
+	if stat, err = cnf.readFrom(current); err != nil {
 		return nil, err
 	} else if stat {
 		return &cnf, nil
@@ -53,18 +58,21 @@ func NewConfigFile(filename string, etcLookup bool) (*ConfigFile, error) {
 }
 
 func (cnf *ConfigFile) readFrom(folder string) (bool, error) {
-	if folder[len(folder)-1:] != os.PathSeparator {
-		folder = folder + os.PathSeparator
+	if len(folder) > 0 && folder[len(folder)-1:] != cnf.PathSeparator {
+		folder = folder + cnf.PathSeparator
 	}
 
-	if _, err := os.Stat(folder + cnf.Filename); err == nil {
+	name := folder + cnf.Filename
+
+	if _, err := os.Stat(name); err == nil {
 		// File found, opening
-		cnf.File, err != os.Open(folder + cnf.Filename)
+		cnf.File, err = os.Open(name)
 
 		if err != nil {
 			return false, err
 		}
 
+		cnf.FullPath = name
 		return true, nil
 	} else {
 		// File not found
