@@ -3,9 +3,10 @@ package configfile
 import (
 	"fmt"
 	"os"
-	"os/user"
+	"runtime"
 	"io/ioutil"
 	"encoding/json"
+	"github.com/mitchellh/go-homedir"
 )
 
 type ConfigFile struct {
@@ -14,7 +15,6 @@ type ConfigFile struct {
 	PathSeparator string
 	File *os.File
 }
-
 
 /// Creates new ConfigFile instance
 /// If config file not found, returns error
@@ -35,18 +35,18 @@ func NewConfigFile(filename string, etcLookup bool) (*ConfigFile, error) {
 	}
 
 	// Read from homedir
-	user, err := user.Current()
+	home, err := homedir.Dir()
 	if err != nil {
 		return nil, err
 	}
-	if stat, err = cnf.readFrom(user.HomeDir); err != nil {
+	if stat, err = cnf.readFrom(home); err != nil {
 		return nil, err
 	} else if stat {
 		return &cnf, nil
 	}
 
 	// Read from /etc
-	if etcLookup {
+	if etcLookup && runtime.GOOS != "windows" {
 		if stat, err = cnf.readFrom("/etc/"); err != nil {
 			return nil, err
 		} else if stat {
@@ -57,6 +57,7 @@ func NewConfigFile(filename string, etcLookup bool) (*ConfigFile, error) {
 	return nil, fmt.Errorf("Unable to find configuration file %s", filename)
 }
 
+// Attempts to read config from folder
 func (cnf *ConfigFile) readFrom(folder string) (bool, error) {
 	if len(folder) > 0 && folder[len(folder)-1:] != cnf.PathSeparator {
 		folder = folder + cnf.PathSeparator
@@ -85,6 +86,7 @@ func (cnf *ConfigFile) ReadAll() ([]byte, error) {
 	return ioutil.ReadAll(cnf.File)
 }
 
+// Decodes JSON structure
 func (cnf *ConfigFile) DecodeJson(strct interface{}) error {
 	bytes, err := cnf.ReadAll()
 
