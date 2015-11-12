@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"bytes"
 )
 
 // Path separator
@@ -105,6 +106,22 @@ func (r ConfigReader) GetFile(name string) (*os.File, error) {
 	}
 
 	return nil, fmt.Errorf("Unable to read configuration file %s. Not exisits or not readable", name)
+}
+
+func (r ConfigReader) ReadFile(name string) ([]byte, error) {
+	file, err := r.GetFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+
+	_, err = buf.ReadFrom(file);
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
 // Reads configuration file and unmarshalls it data using JSON unmarshaller
