@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"io/ioutil"
 )
 
 // Path separator
@@ -105,6 +106,27 @@ func (r ConfigReader) GetFile(name string) (*os.File, error) {
 	}
 
 	return nil, fmt.Errorf("Unable to read configuration file %s. Not exisits or not readable", name)
+}
+
+// Reads configuration file and returns bytes
+func (r ConfigReader) ReadBytes(name string) ([]byte, error) {
+	// Load configuration file
+	file, err := r.GetFile(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read all bytes of file
+	data, err := ioutil.ReadAll(file)
+
+	// Close file resource
+	file.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // Reads configuration file and unmarshalls it data using JSON unmarshaller
